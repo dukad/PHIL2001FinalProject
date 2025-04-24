@@ -4,7 +4,9 @@ UPDATE_RATE_STRATEGY = 0.1
 UPDATE_RATE_CONNECTIONS = 0.01
 
 class Player:
-    def __init__(self, index):
+    def __init__(self, index, strategy):
+        self.strategy = strategy
+        self.color = 1
         self.index = index
         self.connections = set()
 

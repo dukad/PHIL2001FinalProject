@@ -1,25 +1,25 @@
 import dash
 from dash import html, dcc, callback, Output, Input, State
-from utils.sim import Simulation
+from dash.dependencies import ALL
+from utils.sim import Simulation, SimulationParameters
+import numpy as np
 
 DEFAULT_CONNECTIONS = 3
 DEFAULT_N = 50
 
-# @callback(
-#     Output('container-button-basic', 'children'),
-#     Input('submit-val', 'n_clicks'),
-#     State('input-on-submit', 'value'),
-#     prevent_initial_call=True
-# )
-# def update_output(n_clicks, value):
-#     return 'The input value was "{}" and the button has been clicked {} times'.format(
-#         value,
-#         n_clicks
-#     )
+parameters = SimulationParameters(
+    num_players=DEFAULT_N,
+    num_connections=DEFAULT_CONNECTIONS,
+    num_strategies=2,
+    payoffs=[0, 0],
+    percentages=[0, 0]
+)
+
 
 @callback(
     Output('network-graph', 'figure', allow_duplicate=True),
     Input('next-gen', 'n_clicks'),
+    
     prevent_initial_call=True,
     allow_duplicate=True
 )
@@ -32,12 +32,48 @@ def next_generation_click(n_clicks):
     Input('gen', 'n_clicks'),
     State('num-players', 'value'),
     State('num-connections', 'value'),
+    State({"type": "strategy-input", "index": ALL}, "value"),
+    State({"type": "strategy-input", "index": ALL}, "id"),
+    State({"type": "strategy-percentage", "index": ALL}, "value"),
+    State({"type": "strategy-percentage", "index": ALL}, "id"),
+    State("num-strategies", "value"),
+    # State('num-strategies', 'value')
+
     prevent_initial_call=True,
     
 )
-def generate_network(n_clicks, num_players, num_connections):
-    sim.change_num_connections(num_connections)  # update the number of connections
-    sim.change_num_players(num_players)  # update the number of players
+def generate_network(n_clicks, num_players, num_connections, values, ids, percentages, ids2, num_strategies):
+    if not values:
+        print('No values')
+        print(values)
+        return sim.render_graph()
+    if not ids:
+        print('No ids')
+        print(ids)
+        return sim.render_graph()
+    
+    # print(values)
+    # print(ids)
+    # print(percentages)
+    # print("strategies", num_strategies)
+    # format the matrix values to be square with length num_strategies
+    matrix = np.zeros((num_strategies, num_strategies))
+    # zip the ids and the values, and place the values into the matrix
+    for i, id in enumerate(ids):
+        # get the row and column from the id
+        row, col = id['index'].split('-')
+        row = int(row)
+        col = int(col)
+        # print(row, col)
+        # set the value in the matrix
+        matrix[row][col] = values[i]
+    print(matrix)
+    parameters.payoffs = matrix
+    parameters.percentages = percentages
+    parameters.num_connections = num_connections
+    parameters.num_players = num_players
+    parameters.num_strategies = num_strategies
+    sim.update_parameters(parameters)
     # genereate a new network based on number of players and connections
     return sim.render_graph()
 
@@ -52,7 +88,7 @@ def update_strategy_grid(n):
         # show user an error message, and set it to 6
         n = 5
         # change the input to 6
-        return [html.Div('Number of strategies cannot exceed 5', style={'color': 'red'})]
+        return [html.Div('# of strategies cannot exceed 5', style={'color': 'red'})]
     
 
 
@@ -69,7 +105,8 @@ def update_strategy_grid(n):
                 dcc.Input(
                     id={'type': 'strategy-input', 'index': f'{i}-{j}'},
                     type='number',
-                    style={'width': '60px', 'margin': '2px'}
+                    style={'width': '60px', 'margin': '2px'},
+                    value = 0
                 )
             )
         grid.append(html.Div(row, style={'display': 'flex'}))
@@ -92,6 +129,7 @@ def update_strategy_grid(n):
                 id={'type': 'strategy-percentage', 'index': f'{j}'},
                 type='number',
                 style={'width': '60px', 'margin': '2px'},
+                value = 0
             )
         )
     grid.append(html.Div(row, style={'display': 'flex'}))
@@ -99,17 +137,7 @@ def update_strategy_grid(n):
     # generate a color key (square of color for each strategy in a row)
     color_key = [html.Div('', style={'width': '60px'})]  # Empty top-left corner
     for j in range(n):
-        match (j):
-            case 0:
-                color = 'rgba(255, 0, 255, 1)'  # Magenta
-            case 1:
-                color = 'rgba(255, 100, 0, 1)'  # Orange
-            case 2:
-                color = 'rgba(255, 255, 0, 1)'  # Yellow
-            case 3:
-                color = 'rgba(0, 0, 160, 1)'  # Blue
-            case 4:
-                color = 'rgba(180, 0, 80, 1)'  # Maroon
+        color = SimulationParameters.strategy_to_color(j, dashParam=True)
         color_key.append(
             
             html.Div(
@@ -122,6 +150,12 @@ def update_strategy_grid(n):
             )
         )
     grid.append(html.Div(color_key, style={'display': 'flex', 'marginBottom': '4px'}))
+
+    # wrap all this info into a SimulationParameters object and update the simulation
+    # change parameters # of strategies
+    parameters.num_strategies = n
+    # pull data from the grid and update the payoffs and percentages
+    # create
 
     return grid
 
@@ -187,7 +221,7 @@ if __name__ == "__main__":
             },
             children=[
                 html.H1('Network Simulation', style={'textAlign': 'center'}),
-                dcc.Graph(id='network-graph', figure=generate_network(0, DEFAULT_N, DEFAULT_CONNECTIONS), config={'displayModeBar': False}),
+                dcc.Graph(id='network-graph', figure=sim.render_graph(), config={'displayModeBar': False}),
             ]
         )
     ]

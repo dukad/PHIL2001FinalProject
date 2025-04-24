@@ -1,25 +1,68 @@
 import networkx as nx
 import plotly.graph_objs as go
 import random
+import numpy as np
 
 from utils.player import Player
+
+class SimulationParameters:
+    # basically a wrapper class that the GUI can manipulate and pass all at once to the main simulation class to update
+    def __init__(self, num_players, num_connections, num_strategies=0, payoffs=[], percentages=[]): 
+        self.num_players = num_players
+        self.num_connections = num_connections
+        self.num_strategies = num_strategies
+        self.payoffs = payoffs
+        self.percentages = percentages
+        # check to make sure everything is the right dimension
+        if len(payoffs) != num_strategies:
+            raise ValueError("Payoffs must be the same length as number of strategies")
+        if len(percentages) != num_strategies:
+            raise ValueError("Percentages must be the same length as number of strategies")
+        
+    @staticmethod
+    def strategy_to_color(strategy: int, dashParam = False):
+        match strategy:
+            case 0:
+                color = (255, 0, 255)  # Magenta
+            case 1:
+                color = (255, 100, 0)  # Orange
+            case 2:     
+                color = (255, 255, 0)  # Yellow
+            case 3:
+                color = (0, 0, 255)  # Blue
+            case 4:
+                color = (180, 0, 80)  # Maroon
+        if dashParam:
+            # convert to a string for dash
+            return f'rgba({color[0]}, {color[1]}, {color[2]}, 1)'
+
+                
 
 class Simulation: 
     def __init__(self):
         self.conns = 3
-        self.N = 4
-
+        self.N = 50
+        self.num_strategies = 2
+        self.payoffs = np.zeros((self.num_strategies, self.num_strategies))
+        self.percentages = [100 // self.num_strategies for _ in range(self.num_strategies)] # even distribution of strategies
+        self.players = {}
         self.graph = nx.random_regular_graph(self.conns, self.N)
         
-        print("ADJ", self.graph._adj)
-        print(" Edges:", self.graph.edges)
+        # print("ADJ", self.graph._adj)
+        # print(" Edges:", self.graph.edges)
         # print("degree", self.graph.degree)
 
         # print(self.pos)
 
         self.init_players()
 
-       
+    def update_parameters(self, params: SimulationParameters):
+        self.N = params.num_players
+        self.conns = params.num_connections
+        self.num_strategies = params.num_strategies
+        self.payoffs = params.payoffs
+        self.percentages = params.percentages
+        self.init_players()
 
     def change_num_players(self, n):
         self.N = n
@@ -34,10 +77,25 @@ class Simulation:
     def init_players(self): 
         self.players = {}
 
+        total = sum(self.percentages) # this should be 100 but no reason to have it be that really
         # almost definitely not the most efficient way to do this
         for node in self.graph.nodes:
+            # genearte a random strategy based on the strategy percentages
+            if total <= 1:
+                rand = total
+            else:
+                rand = random.randint(0, total - 1)
+            # map the random number to a strategy based on the percentages
+            strategy = 0
+            for i, percent in enumerate(self.percentages):
+                if rand < percent:
+                    strategy = i
+                    break
+                else:
+                    rand -= percent
+
             # create a dict of players based on all the created nodes
-            self.players[node] = Player(node)
+            self.players[node] = Player(node, strategy)
         for node1, node2 in self.graph.edges:
             self.players[node1].connect(self.players[node2])
             
@@ -55,7 +113,7 @@ class Simulation:
                 if not (conn.index, player.index) in self.graph.edges:
                     # if not, add it
                     self.graph.add_edge(player.index, conn.index)
-        print(self.graph.edges)
+        # print(self.graph.edges)
         
         # recreate the layout
         self.pos = nx.spring_layout(self.graph, seed=0) # generate positions of nodes based on connections
@@ -99,7 +157,8 @@ class Simulation:
             hoverinfo='text',
             marker=dict(
                 showscale=False,
-                color=[random.randint(0, 10) for _ in self.graph.nodes], # change this later -- colorizes each node
+                # color=[player.strategy for player in self.players.values()], # change this later -- colorizes each node
+                color = [SimulationParameters.strategy_to_color(player.strategy, dashParam=True) for player in self.players.values()], # change this later -- colorizes each node
                 size=20,
                 line=dict(width=2, color='white')
             )
