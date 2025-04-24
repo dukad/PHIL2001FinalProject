@@ -11,6 +11,11 @@ This project was made to simulate networked behavior of those participating in g
 3. Run program using  <pre> python main.py</pre>
 4. Open <href> http://127.0.0.1:8050 </href> in a browser
 
+## TLDR Recommendations for easy, good results
+* Use player count less than 200
+* Use connections less than 10
+* 
+
 ## Control Parameters
 * Number of Players 
     * Number of nodes/players to be generated in the network, updates when 'Generate' is clicked.
@@ -32,3 +37,4 @@ This project was made to simulate networked behavior of those participating in g
 ## A Note on complex simulations
 
 If the number of players and connections are too high, then the run for (generations) may not work properly. This is because the latency on each generation is too high, and the scheduling and rendering cannot keep up. To fix this, simply increase the INTERVAL variable on line 1 of main.py. This will slow down all other simulations, my apologies for not providing a more robust solution to this.
+

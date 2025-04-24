@@ -1,4 +1,4 @@
-INTERAVAL = 300
+INTERVAL = 300
 
 import dash
 from dash import html, dcc, callback, Output, Input, State
@@ -255,14 +255,14 @@ children=[
                 type='number',
                 min=1,
                 step=1,
-                value=1,
+                value=100,
                 style={'width': '40%'},
                 max=10000
             ),
             html.Button('Run', id='run-for-button', n_clicks=0, style={'width': '50%', 'margin-left': '10%'}),
             html.Br(), html.Br(),
             html.Label('Probe and Adjust Rate', style={'textAlign': 'center'}),
-            dcc.Input(id='probe-rate', type='number', value=0.01, style={'width': '100%'}, min=0, max=1, step=0.001),
+            dcc.Input(id='probe-rate', type='number', value=0.1, style={'width': '100%'}, min=0, max=1, step=0.001),
             html.Label('Strategy/Connection Ratio', style={'textAlign': 'center', 'width': '50%'}),
             dcc.Input(id='strategy-conn-ratio', type='number', value=0.5, style={'width': '100%'}, min=0, max=1, step=0.001),
         ]),
