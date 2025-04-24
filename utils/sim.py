@@ -7,12 +7,14 @@ from utils.player import Player
 
 class SimulationParameters:
     # basically a wrapper class that the GUI can manipulate and pass all at once to the main simulation class to update
-    def __init__(self, num_players, num_connections, num_strategies=0, payoffs=[], percentages=[]): 
+    def __init__(self, num_players, num_connections, num_strategies=0, payoffs=[], percentages=[], probe_rate=0.01, strategy_conn_ratio=0.5): 
         self.num_players = num_players
         self.num_connections = num_connections
         self.num_strategies = num_strategies
         self.payoffs = payoffs
         self.percentages = percentages
+        self.probe_rate = probe_rate
+        self.strategy_conn_ratio = strategy_conn_ratio
         # check to make sure everything is the right dimension
         if len(payoffs) != num_strategies:
             raise ValueError("Payoffs must be the same length as number of strategies")
@@ -47,6 +49,8 @@ class Simulation:
         self.percentages = [100 // self.num_strategies for _ in range(self.num_strategies)] # even distribution of strategies
         self.players = {}
         self.graph = nx.random_regular_graph(self.conns, self.N)
+        self.probe_rate = 0.01
+        self.strategy_conn_ratio = 0.5
         
         # print("ADJ", self.graph._adj)
         # print(" Edges:", self.graph.edges)
@@ -57,11 +61,14 @@ class Simulation:
         self.init_players()
 
     def update_parameters(self, params: SimulationParameters):
-        self.N = params.num_players
-        self.conns = params.num_connections
+        self.change_num_connections(params.num_connections)
+        self.change_num_players(params.num_players)
+        # self.conns = params.num_connections
         self.num_strategies = params.num_strategies
         self.payoffs = params.payoffs
         self.percentages = params.percentages
+        self.probe_rate = params.probe_rate
+        self.strategy_conn_ratio = params.strategy_conn_ratio
         self.init_players()
 
     def change_num_players(self, n):
@@ -119,6 +126,12 @@ class Simulation:
         self.pos = nx.spring_layout(self.graph, seed=0) # generate positions of nodes based on connections
 
     def next_generation(self):
+        # print("Next generation")
+        # have all players do their thing
+        for player in self.players.values():
+            # print(player)
+            player.play_round(self.num_strategies, self.payoffs, self.N, list(self.players.values()), self.probe_rate, self.strategy_conn_ratio)
+
         return self.render_graph()
     
     def render_graph(self):
