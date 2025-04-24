@@ -19,7 +19,17 @@ class Simulation:
 
         self.init_players()
 
-        self.players[1].disconnect(self.players[2])
+       
+
+    def change_num_players(self, n):
+        self.N = n
+        self.graph = nx.random_regular_graph(self.conns, self.N)
+        self.init_players()
+
+    def change_num_connections(self, c):
+        self.conns = c
+        self.graph = nx.random_regular_graph(self.conns, self.N)
+        self.init_players()
 
     def init_players(self): 
         self.players = {}
@@ -48,7 +58,7 @@ class Simulation:
         print(self.graph.edges)
         
         # recreate the layout
-        self.pos = nx.spring_layout(self.graph) # generate positions of nodes based on connections
+        self.pos = nx.spring_layout(self.graph, seed=0) # generate positions of nodes based on connections
 
     def next_generation(self):
         return self.render_graph()
