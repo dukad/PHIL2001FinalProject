@@ -1,3 +1,5 @@
+INTERAVAL = 300
+
 import dash
 from dash import html, dcc, callback, Output, Input, State
 from dash.dependencies import ALL
@@ -264,7 +266,7 @@ children=[
             html.Label('Strategy/Connection Ratio', style={'textAlign': 'center', 'width': '50%'}),
             dcc.Input(id='strategy-conn-ratio', type='number', value=0.5, style={'width': '100%'}, min=0, max=1, step=0.001),
         ]),
-        dcc.Interval(id='network-interval', interval=300, n_intervals=0, disabled=True),
+        dcc.Interval(id='network-interval', interval=INTERVAL, n_intervals=0, disabled=True),
         dcc.Store(id='network-step-store', data=0),
         dcc.Store(id='network-max-steps', data=0),
 
